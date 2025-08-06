@@ -1,28 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Register - GlobalSim</title>
 </head>
 <body>
-  <h2>Register</h2>
+  <h2>Create Your GlobalSim Account</h2>
+
   <form id="registerForm">
     <input type="email" id="email" placeholder="Email" required><br>
     <input type="password" id="password" placeholder="Password" required><br>
     <button type="submit">Register</button>
   </form>
 
-  <script type="module">
-    import { auth, createUserWithEmailAndPassword } from './firebase.js';
+  <p id="message" style="color: green;"></p>
 
-    document.getElementById("registerForm").addEventListener("submit", (e) => {
+  <!-- Firebase Auth -->
+  <script type="module">
+    import {
+      auth,
+      createUserWithEmailAndPassword,
+    } from './firebase.js';
+
+    import {
+      sendEmailVerification
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const form = document.getElementById("registerForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
       createUserWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          alert("Registration successful!");
-          window.location.href = "dashboard.html";
+        .then((userCredential) => {
+          const user = userCredential.user;
+
+          sendEmailVerification(user)
+            .then(() => {
+              message.innerText = "Verification email sent! Please check your inbox before logging in.";
+              form.reset();
+            })
+            .catch((error) => {
+              alert("Failed to send verification email: " + error.message);
+            });
         })
         .catch((error) => {
           alert("Registration failed: " + error.message);
