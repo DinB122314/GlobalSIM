@@ -1,31 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - GlobalSim</title>
 </head>
 <body>
-  <h2>Login</h2>
+  <h2>Login to GlobalSim</h2>
+
   <form id="loginForm">
     <input type="email" id="email" placeholder="Email" required><br>
     <input type="password" id="password" placeholder="Password" required><br>
     <button type="submit">Login</button>
   </form>
 
-  <script type="module">
-    import { auth, signInWithEmailAndPassword } from './firebase.js';
+  <p id="message" style="color: red;"></p>
 
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
+  <!-- Firebase Auth -->
+  <script type="module">
+    import {
+      auth,
+      signInWithEmailAndPassword
+    } from './firebase.js';
+
+    const form = document.getElementById("loginForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
       signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          alert("Login successful!");
-          window.location.href = "dashboard.html";
+        .then((userCredential) => {
+          const user = userCredential.user;
+
+          if (user.emailVerified) {
+            // ✅ Email is verified
+            window.location.href = "dashboard.html";
+          } else {
+            // ❌ Email not verified
+            message.innerText = "Please verify your email before logging in.";
+          }
         })
         .catch((error) => {
-          alert("Login failed: " + error.message);
+          message.innerText = "Login failed: " + error.message;
         });
     });
   </script>
