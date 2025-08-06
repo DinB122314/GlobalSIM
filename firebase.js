@@ -8,17 +8,18 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  signOut
+  signOut,
+  sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyA-G-m8KP7SquoFky4kNHg_Nmswb2QFL1M",
-  authDomain: "globalsim-d7f8b.firebaseapp.com",
-  projectId: "globalsim-d7f8b",
-  storageBucket: "globalsim-d7f8b.firebasestorage.app",
-  messagingSenderId: "775556523273",
-  appId: "1:775556523273:web:2d7da52100bb574619dfd8"
+  apiKey: "AIzaSyB9xPfQDbAJjPS_6H081FEjSyEQUE80IkY",
+  authDomain: "globalsim-54868.firebaseapp.com",
+  projectId: "globalsim-54868",
+  storageBucket: "globalsim-54868.firebasestorage.app",
+  messagingSenderId: "128597882511",
+  appId: "1:128597882511:web:e192fa863f3d7976b5a2fa"
 };
 
 // Initialize Firebase
@@ -26,14 +27,15 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 
-// Set persistence
+// Keep users logged in even after refreshing
 setPersistence(auth, browserLocalPersistence);
 
-// ✅ Export functions and auth
+// Export functions for use in other files
 export {
   auth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  signOut
+  signOut,
+  sendEmailVerification
 };
