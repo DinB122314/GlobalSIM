@@ -5,26 +5,47 @@
 </head>
 <body>
   <h2>Welcome to GlobalSim Dashboard</h2>
-  <p id="userEmail">Loading...</p>
+  <p id="userEmail">Loading user...</p>
+  <p id="walletBalance">Balance: $0.00</p>
   <button id="logout">Logout</button>
 
   <script type="module">
-    import { auth, onAuthStateChanged, signOut } from './firebase.js';
+    import {
+      auth,
+      onAuthStateChanged,
+      signOut
+    } from './firebase.js';
 
-    onAuthStateChanged(auth, (user) => {
+    import {
+      getFirestore,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const db = getFirestore();
+
+    onAuthStateChanged(auth, async (user) => {
       if (user && user.emailVerified) {
-        document.getElementById("userEmail").innerText = "✅ Logged in as: " + user.email;
+        document.getElementById("userEmail").innerText = "Logged in as: " + user.email;
+
+        // Fetch wallet balance from Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const balance = data.balance || 0;
+          document.getElementById("walletBalance").innerText = "Balance: $" + balance.toFixed(2);
+        } else {
+          document.getElementById("walletBalance").innerText = "Balance: $0.00 (No data found)";
+        }
+
       } else {
-        alert("You must verify your email before accessing the dashboard.");
+        alert("You must verify your email first.");
         window.location.href = "login.html";
       }
     });
 
     document.getElementById("logout").addEventListener("click", () => {
-      signOut(auth).then(() => {
-        alert("You’ve been logged out.");
-        window.location.href = "login.html";
-      });
+      signOut(auth).then(() => window.location.href = "login.html");
     });
   </script>
 </body>
