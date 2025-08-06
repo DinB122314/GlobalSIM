@@ -41,15 +41,15 @@
 
           sendEmailVerification(user)
             .then(() => {
-              message.innerText = "Verification email sent! Please check your inbox before logging in.";
+              message.innerText = "✅ Verification email sent! Please check your inbox before logging in.";
               form.reset();
             })
             .catch((error) => {
-              alert("Failed to send verification email: " + error.message);
+              message.innerText = "⚠️ Failed to send verification email: " + error.message;
             });
         })
         .catch((error) => {
-          alert("Registration failed: " + error.message);
+          message.innerText = "❌ Registration failed: " + error.message;
         });
     });
   </script>
