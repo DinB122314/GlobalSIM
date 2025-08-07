@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Payment Proof - GlobalSim</title>
+</head>
+<body>
+  <h2>Upload Payment Proof</h2>
+
+  <form id="uploadForm">
+    <label>Select Proof Image:</label><br>
+    <input type="file" id="proofFile" accept="image/*" required><br><br>
+    <button type="submit">Upload</button>
+  </form>
+
+  <p id="status"></p>
+  <button onclick="location.href='dashboard.html'">Back to Dashboard</button>
+
+  <script type="module">
+    import { auth, onAuthStateChanged } from './firebase.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const storage = getStorage();
+    const db = getFirestore();
+
+    const uploadForm = document.getElementById("uploadForm");
+    const status = document.getElementById("status");
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      }
+
+      uploadForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const file = document.getElementById("proofFile").files[0];
+
+        if (!file) {
+          status.innerText = "Please select a file.";
+          return;
+        }
+
+        const storageRef = ref(storage, `payment_proofs/${user.uid}/${file.name}`);
+        try {
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+
+          await setDoc(doc(db, "paymentProofs", user.uid), {
+            email: user.email,
+            url: url,
+            uploadedAt: new Date()
+          });
+
+          status.innerText = "✅ Uploaded successfully!";
+        } catch (error) {
+          console.error(error);
+          status.innerText = "❌ Upload failed.";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
