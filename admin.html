@@ -1,124 +1,128 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Panel - GlobalSim</title>
+  <title>Admin Dashboard - GlobalSim</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f4;
+    }
+    button {
+      margin-right: 5px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h2>🔐 GlobalSim Admin Panel</h2>
-  <p id="adminEmail">Loading...</p>
+  <h2>👥 Users & Balances</h2>
+  <table id="usersTable">
+    <thead>
+      <tr><th>Email</th><th>Balance</th></tr>
+    </thead>
+    <tbody><tr><td colspan="2">Loading...</td></tr></tbody>
+  </table>
 
-  <h3>👥 Users & Balances</h3>
-  <ul id="userList">Loading...</ul>
+  <h2>📥 Payment Proofs</h2>
+  <table id="paymentsTable">
+    <thead>
+      <tr><th>User</th><th>Image</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody><tr><td colspan="4">Loading...</td></tr></tbody>
+  </table>
 
-  <h3>📥 Payment Proofs</h3>
-  <ul id="paymentList">Loading...</ul>
-
-  <h3>📄 Orders</h3>
-  <ul id="orderList">Loading...</ul>
+  <h2>📄 Orders</h2>
+  <table id="ordersTable">
+    <thead>
+      <tr><th>User</th><th>Order Details</th><th>Date</th></tr>
+    </thead>
+    <tbody><tr><td colspan="3">Loading...</td></tr></tbody>
+  </table>
 
   <script type="module">
-    import { auth, onAuthStateChanged } from './firebase.js';
+    import { auth, onAuthStateChanged, signOut } from './firebase.js';
     import {
-      getFirestore,
-      collection,
-      getDocs,
-      deleteDoc,
-      updateDoc,
-      getDoc,
-      doc
+      getFirestore, collection, getDocs, updateDoc, deleteDoc, doc
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const db = getFirestore();
-    const adminUID = "lddTZnjW4ldkBu30c81YcDksFlG3";
-
-    async function approvePayment(paymentId, userId, amount) {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        alert("User not found!");
-        return;
-      }
-
-      const currentBalance = userSnap.data().balance || 0;
-      const newBalance = currentBalance + amount;
-
-      await updateDoc(userRef, { balance: newBalance });
-      await deleteDoc(doc(db, "payments", paymentId));
-
-      alert(`Payment approved! New balance: $${newBalance.toFixed(2)}`);
-      location.reload();
-    }
-
-    async function deleteItem(collectionName, id) {
-      await deleteDoc(doc(db, collectionName, id));
-      alert("Item deleted!");
-      location.reload();
-    }
-
-    async function markOrderCompleted(orderId) {
-      const orderRef = doc(db, "orders", orderId);
-      await updateDoc(orderRef, { status: "completed" });
-      alert("Order marked as completed!");
-      location.reload();
-    }
+    const adminUID = "lddTZnjW4ldkBu30c81YcDksFlG3"; // your admin UID
 
     onAuthStateChanged(auth, async (user) => {
-      if (!user || user.uid !== adminUID) {
-        alert("Access denied. Admins only.");
+      if (user?.uid === adminUID) {
+        loadUsers();
+        loadPayments();
+        loadOrders();
+      } else {
+        alert("Access denied.");
         window.location.href = "login.html";
-        return;
       }
-
-      document.getElementById("adminEmail").innerText = "Logged in as: " + user.email;
-
-      // Load Users
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      const userList = document.getElementById("userList");
-      userList.innerHTML = "";
-      usersSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        userList.innerHTML += `
-          <li>
-            ${data.email} — $${(data.balance || 0).toFixed(2)}
-            <button onclick="deleteItem('users', '${docSnap.id}')">Delete</button>
-          </li>`;
-      });
-
-      // Load Payments
-      const paymentSnapshot = await getDocs(collection(db, "payments"));
-      const paymentList = document.getElementById("paymentList");
-      paymentList.innerHTML = "";
-      paymentSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        paymentList.innerHTML += `
-          <li>
-            ${data.email} uploaded proof: <a href="${data.imageUrl}" target="_blank">View</a> — $${data.amount}
-            <button onclick="approvePayment('${docSnap.id}', '${data.userId}', ${data.amount})">Approve</button>
-            <button onclick="deleteItem('payments', '${docSnap.id}')">Delete</button>
-          </li>`;
-      });
-
-      // Load Orders
-      const orderSnapshot = await getDocs(collection(db, "orders"));
-      const orderList = document.getElementById("orderList");
-      orderList.innerHTML = "";
-      orderSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const status = data.status || "pending";
-        orderList.innerHTML += `
-          <li>
-            ${data.type} — $${data.amount} — ${new Date(data.date.seconds * 1000).toLocaleString()} — Status: ${status.toUpperCase()}
-            ${status === "pending" ? `<button onclick="markOrderCompleted('${docSnap.id}')">Mark as Completed</button>` : ""}
-            <button onclick="deleteItem('orders', '${docSnap.id}')">Delete</button>
-          </li>`;
-      });
-
-      // Make functions global
-      window.deleteItem = deleteItem;
-      window.approvePayment = approvePayment;
-      window.markOrderCompleted = markOrderCompleted;
     });
+
+    async function loadUsers() {
+      const snapshot = await getDocs(collection(db, "users"));
+      const tbody = document.querySelector("#usersTable tbody");
+      tbody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${data.email}</td><td>$${(data.balance || 0).toFixed(2)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadPayments() {
+      const snapshot = await getDocs(collection(db, "paymentProofs"));
+      const tbody = document.querySelector("#paymentsTable tbody");
+      tbody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.userEmail || "Unknown"}</td>
+          <td><a href="${data.imageURL}" target="_blank">View</a></td>
+          <td>${data.status || "Pending"}</td>
+          <td>
+            <button onclick="approvePayment('${docSnap.id}')">Approve</button>
+            <button onclick="deletePayment('${docSnap.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadOrders() {
+      const snapshot = await getDocs(collection(db, "orders"));
+      const tbody = document.querySelector("#ordersTable tbody");
+      tbody.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${data.userEmail || "Unknown"}</td><td>${data.details || ""}</td><td>${data.date || ""}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.approvePayment = async function(id) {
+      await updateDoc(doc(db, "paymentProofs", id), { status: "Approved" });
+      alert("Payment approved.");
+      loadPayments();
+    };
+
+    window.deletePayment = async function(id) {
+      await deleteDoc(doc(db, "paymentProofs", id));
+      alert("Payment deleted.");
+      loadPayments();
+    };
   </script>
 </body>
 </html>
