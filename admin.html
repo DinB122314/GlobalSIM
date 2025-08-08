@@ -40,17 +40,16 @@
   import { getFirestore, collection, getDocs, updateDoc, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // 🔹 Replace this with your Firebase config
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyB9xPfQDbAJjPS_6H081FEjSyEQUE80IkY",
+  authDomain: "globalsim-54868.firebaseapp.com",
+  projectId: "globalsim-54868",
+  storageBucket: "globalsim-54868.firebasestorage.app",
+  messagingSenderId: "128597882511",
+  appId: "1:128597882511:web:e192fa863f3d7976b5a2fa"
+};
 
-  const adminUID = "YOUR_ADMIN_UID"; // 🔹 Put your admin UID here
+  const adminUID = "lddTZnjW4ldkBu30c81YcDksFlG3"; 
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -138,3 +137,4 @@
 
 </body>
 </html>
+
