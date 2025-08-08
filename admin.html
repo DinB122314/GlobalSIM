@@ -1,128 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard - GlobalSim</title>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
   <style>
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #f4f4f4;
-    }
-    button {
-      margin-right: 5px;
-      padding: 5px 8px;
-      cursor: pointer;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 30px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f4f4f4; }
+    button { padding: 5px 10px; margin-right: 5px; cursor: pointer; }
+    img { max-width: 100px; height: auto; }
   </style>
 </head>
 <body>
-  <h2>👥 Users & Balances</h2>
-  <table id="usersTable">
-    <thead>
-      <tr><th>Email</th><th>Balance</th></tr>
-    </thead>
-    <tbody><tr><td colspan="2">Loading...</td></tr></tbody>
-  </table>
 
-  <h2>📥 Payment Proofs</h2>
-  <table id="paymentsTable">
-    <thead>
-      <tr><th>User</th><th>Image</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    <tbody><tr><td colspan="4">Loading...</td></tr></tbody>
-  </table>
+<h1>Admin Dashboard</h1>
 
-  <h2>📄 Orders</h2>
-  <table id="ordersTable">
-    <thead>
-      <tr><th>User</th><th>Order Details</th><th>Date</th></tr>
-    </thead>
-    <tbody><tr><td colspan="3">Loading...</td></tr></tbody>
-  </table>
+<h2>👥 Users & Balances</h2>
+<table id="usersTable">
+  <tr><th>Email</th><th>Balance</th></tr>
+  <tr><td colspan="2">Loading...</td></tr>
+</table>
 
-  <script type="module">
-    import { auth, onAuthStateChanged, signOut } from './firebase.js';
-    import {
-      getFirestore, collection, getDocs, updateDoc, deleteDoc, doc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<h2>📥 Payment Proofs</h2>
+<table id="proofsTable">
+  <tr><th>User</th><th>Image</th><th>Status</th><th>Actions</th></tr>
+  <tr><td colspan="4">Loading...</td></tr>
+</table>
 
-    const db = getFirestore();
-    const adminUID = "lddTZnjW4ldkBu30c81YcDksFlG3"; // your admin UID
+<h2>📄 Orders</h2>
+<table id="ordersTable">
+  <tr><th>User</th><th>Order Details</th><th>Date</th></tr>
+  <tr><td colspan="3">Loading...</td></tr>
+</table>
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user?.uid === adminUID) {
-        loadUsers();
-        loadPayments();
-        loadOrders();
-      } else {
-        alert("Access denied.");
-        window.location.href = "login.html";
-      }
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, updateDoc, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // 🔹 Replace this with your Firebase config
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const adminUID = "YOUR_ADMIN_UID"; // 🔹 Put your admin UID here
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, user => {
+    if (user && user.uid === adminUID) {
+      loadUsers();
+      loadPaymentProofs();
+      loadOrders();
+    } else {
+      document.body.innerHTML = "<h1>Access Denied</h1>";
+    }
+  });
+
+  async function loadUsers() {
+    const table = document.getElementById("usersTable");
+    table.innerHTML = "<tr><th>Email</th><th>Balance</th></tr>";
+    const querySnapshot = await getDocs(collection(db, "users"));
+    querySnapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      table.innerHTML += `<tr>
+        <td>${data.email}</td>
+        <td>${data.balance}</td>
+      </tr>`;
     });
+  }
 
-    async function loadUsers() {
-      const snapshot = await getDocs(collection(db, "users"));
-      const tbody = document.querySelector("#usersTable tbody");
-      tbody.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${data.email}</td><td>$${(data.balance || 0).toFixed(2)}</td>`;
-        tbody.appendChild(tr);
-      });
+  async function loadPaymentProofs() {
+    const table = document.getElementById("proofsTable");
+    table.innerHTML = "<tr><th>User</th><th>Image</th><th>Status</th><th>Actions</th></tr>";
+    const querySnapshot = await getDocs(collection(db, "paymentProofs"));
+    querySnapshot.forEach(async docSnap => {
+      const proof = docSnap.data();
+      const userDoc = await getDoc(doc(db, "users", proof.uid));
+      const userEmail = userDoc.exists() ? userDoc.data().email : "Unknown User";
+
+      table.innerHTML += `<tr>
+        <td>${userEmail}</td>
+        <td><img src="${proof.imageUrl}" alt="Proof"></td>
+        <td>${proof.status}</td>
+        <td>
+          <button onclick="approveProof('${docSnap.id}', '${proof.uid}', ${proof.amount})">Approve</button>
+          <button onclick="deleteProof('${docSnap.id}')">Delete</button>
+        </td>
+      </tr>`;
+    });
+  }
+
+  async function loadOrders() {
+    const table = document.getElementById("ordersTable");
+    table.innerHTML = "<tr><th>User</th><th>Order Details</th><th>Date</th></tr>";
+    const querySnapshot = await getDocs(collection(db, "orders"));
+    querySnapshot.forEach(async docSnap => {
+      const order = docSnap.data();
+      const userDoc = await getDoc(doc(db, "users", order.uid));
+      const userEmail = userDoc.exists() ? userDoc.data().email : "Unknown User";
+      const dateStr = order.date ? new Date(order.date.seconds * 1000).toLocaleString() : "N/A";
+
+      table.innerHTML += `<tr>
+        <td>${userEmail}</td>
+        <td>${typeof order.details === "string" ? order.details : JSON.stringify(order.details)}</td>
+        <td>${dateStr}</td>
+      </tr>`;
+    });
+  }
+
+  window.approveProof = async function(proofId, uid, amount) {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const currentBalance = userSnap.data().balance || 0;
+      await updateDoc(userRef, { balance: currentBalance + amount });
     }
+    await updateDoc(doc(db, "paymentProofs", proofId), { status: "approved" });
+    loadUsers();
+    loadPaymentProofs();
+  };
 
-    async function loadPayments() {
-      const snapshot = await getDocs(collection(db, "paymentProofs"));
-      const tbody = document.querySelector("#paymentsTable tbody");
-      tbody.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${data.userEmail || "Unknown"}</td>
-          <td><a href="${data.imageURL}" target="_blank">View</a></td>
-          <td>${data.status || "Pending"}</td>
-          <td>
-            <button onclick="approvePayment('${docSnap.id}')">Approve</button>
-            <button onclick="deletePayment('${docSnap.id}')">Delete</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
+  window.deleteProof = async function(proofId) {
+    await deleteDoc(doc(db, "paymentProofs", proofId));
+    loadPaymentProofs();
+  };
+</script>
 
-    async function loadOrders() {
-      const snapshot = await getDocs(collection(db, "orders"));
-      const tbody = document.querySelector("#ordersTable tbody");
-      tbody.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${data.userEmail || "Unknown"}</td><td>${data.details || ""}</td><td>${data.date || ""}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    window.approvePayment = async function(id) {
-      await updateDoc(doc(db, "paymentProofs", id), { status: "Approved" });
-      alert("Payment approved.");
-      loadPayments();
-    };
-
-    window.deletePayment = async function(id) {
-      await deleteDoc(doc(db, "paymentProofs", id));
-      alert("Payment deleted.");
-      loadPayments();
-    };
-  </script>
 </body>
 </html>
