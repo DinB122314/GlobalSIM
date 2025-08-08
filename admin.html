@@ -44,7 +44,6 @@
 <h1>GlobalSIM Admin Panel</h1>
 <div id="loading">Checking access...</div>
 
-<!-- ADMIN CONTENT -->
 <div id="admin-content">
   <div class="card">
     <h2>Welcome, Admin!</h2>
@@ -79,7 +78,6 @@ const firebaseConfig = {
  
   onAuthStateChanged(auth, (user) => {
     if (!user) {
-      // If not signed in → show Google login popup
       signInWithPopup(auth, provider)
         .then((result) => {
           const email = result.user.email;
@@ -95,7 +93,7 @@ const firebaseConfig = {
           document.body.innerHTML = "<h1>Login Failed</h1>";
         });
     } else {
-      // If already signed in → check admin rights
+      
       if (adminEmails.includes(user.email)) {
         document.getElementById("loading").style.display = "none";
         document.getElementById("admin-content").style.display = "block";
@@ -113,3 +111,4 @@ const firebaseConfig = {
   });
 
 </script>
+
