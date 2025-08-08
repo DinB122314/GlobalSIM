@@ -49,21 +49,24 @@ const firebaseConfig = {
   appId: "1:128597882511:web:e192fa863f3d7976b5a2fa"
 };
 
-  const adminUID = "lddTZnjW4ldkBu30c81YcDksFlG3"; 
+  const adminEmails = [
+  "danieleziuche@gmail.com"
+];
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  onAuthStateChanged(auth, user => {
-    if (user && user.uid === adminUID) {
-      loadUsers();
-      loadPaymentProofs();
-      loadOrders();
-    } else {
-      document.body.innerHTML = "<h1>Access Denied</h1>";
-    }
-  });
+ 
+onAuthStateChanged(auth, user => {
+  if (user && adminEmails.includes(user.email)) {
+    loadUsers();
+    loadPaymentProofs();
+    loadOrders();
+  } else {
+    document.body.innerHTML = "<h1>Access Denied</h1>";
+  }
+});
 
   async function loadUsers() {
     const table = document.getElementById("usersTable");
@@ -136,4 +139,5 @@ const firebaseConfig = {
 </script>
 
 </body>
+
 </html>
