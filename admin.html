@@ -59,19 +59,21 @@
   import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
   
-  const firebaseConfig = {
-    apiKey: "AIzaSyB9xPfQDbAJjPS_6H081FEjSyEQUE80IkY",
-    authDomain: "globalsim-54868.firebaseapp.com",
-    projectId: "globalsim-54868"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyB9xPfQDbAJjPS_6H081FEjSyEQUE80IkY",
+  authDomain: "globalsim-54868.firebaseapp.com",
+  projectId: "globalsim-54868",
+  storageBucket: "globalsim-54868.firebasestorage.app",
+  messagingSenderId: "128597882511",
+  appId: "1:128597882511:web:e192fa863f3d7976b5a2fa"
+};
 
-  
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
   const adminEmails = [
-    "firebase-adminsdk-fbsvc@globalsim-54868.iam.gserviceaccount.com",
+    "danieleziuche@gmail.com",
   ];
 
  
@@ -109,4 +111,5 @@
       location.reload();
     });
   });
+
 </script>
