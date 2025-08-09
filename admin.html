@@ -4,53 +4,55 @@
   <meta charset="UTF-8">
   <title>GlobalSim Admin Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #2c3e50; }
-    .section { margin-top: 20px; padding: 10px; border: 1px solid #ddd; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    table, th, td { border: 1px solid #ccc; }
-    th, td { padding: 8px; text-align: left; }
-    th { background-color: #f8f8f8; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    table, th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background-color: #f0f0f0; }
+    .hidden { display: none; }
+    .loading { font-size: 18px; color: #888; }
+    button { padding: 5px 10px; }
   </style>
 </head>
 <body>
-
-<h1>GlobalSim Admin Panel</h1>
-<p id="status">Loading authentication...</p>
-
-<div id="panel" style="display:none;">
-  
-  <div class="section">
-    <h2>📊 Balances</h2>
-    <table id="balanceTable">
-      <tr><th>Email</th><th>Balance</th></tr>
-    </table>
-  </div>
-
-  <div class="section">
+  <h1>GlobalSim Admin Panel</h1>
+  <div id="status" class="loading">Loading authentication...</div>
+  <div id="panel" class="hidden">
     <h2>📥 Payment Proofs</h2>
-    <table id="proofTable">
-      <tr><th>User</th><th>Image</th><th>Status</th></tr>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Image</th>
+          <th>Status</th>
+          <th>Amount</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="proofsTable"></tbody>
     </table>
-  </div>
 
-  <div class="section">
     <h2>📄 Orders</h2>
-    <table id="ordersTable">
-      <tr><th>User</th><th>Order Details</th><th>Date</th></tr>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Details</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTable"></tbody>
     </table>
   </div>
 
-</div>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js"></script>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js"></script>
-
-<script>
-
-  const firebaseConfig = {
+  <script>
+    // TODO: Replace with your Firebase config
+   const firebaseConfig = {
   apiKey: "AIzaSyB9xPfQDbAJjPS_6H081FEjSyEQUE80IkY",
   authDomain: "globalsim-54868.firebaseapp.com",
   projectId: "globalsim-54868",
@@ -58,67 +60,82 @@
   messagingSenderId: "128597882511",
   appId: "1:128597882511:web:e192fa863f3d7976b5a2fa"
 };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  const app = firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+    const statusDiv = document.getElementById("status");
+    const panelDiv = document.getElementById("panel");
+    const proofsTable = document.getElementById("proofsTable");
+    const ordersTable = document.getElementById("ordersTable");
 
-  const adminEmails = ["danieleziuche@gmail.com"]; // list of admins
-
-  function loadData() {
-    // Balances
-    db.collection("users").get().then(snapshot => {
-      const table = document.getElementById("balanceTable");
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = `<tr><td>${data.email}</td><td>${data.balance || 0}</td></tr>`;
-        table.innerHTML += row;
-      });
-    });
-
-    // Payment Proofs
-    db.collection("paymentProofs").get().then(snapshot => {
-      const table = document.getElementById("proofTable");
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = `<tr><td>${data.email}</td>
-                     <td><img src="${data.image}" width="100"></td>
-                     <td>${data.status || "Pending"}</td></tr>`;
-        table.innerHTML += row;
-      });
-    });
-
-    // Orders
-    db.collection("orders").get().then(snapshot => {
-      const table = document.getElementById("ordersTable");
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = `<tr><td>${data.email}</td>
-                     <td>${data.details}</td>
-                     <td>${data.date}</td></tr>`;
-        table.innerHTML += row;
-      });
-    });
-  }
-
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      if (adminEmails.includes(user.email)) {
-        document.getElementById("status").style.display = "none";
-        document.getElementById("panel").style.display = "block";
-        loadData();
-      } else {
-        document.getElementById("status").textContent = "Access Denied: Not an admin.";
-        auth.signOut();
-      }
-    } else {
-      auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-        .catch(error => {
-          document.getElementById("status").textContent = "Login Failed: " + error.message;
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        statusDiv.textContent = "Please sign in to continue...";
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => {
+          statusDiv.textContent = "Login failed: " + err.message;
         });
-    }
-  });
-</script>
+      } else {
+        statusDiv.textContent = "Checking admin privileges...";
+        const adminDoc = await db.collection("admins").doc(user.uid).get();
+        if (adminDoc.exists && adminDoc.data().role === "admin") {
+          statusDiv.classList.add("hidden");
+          panelDiv.classList.remove("hidden");
+          loadPaymentProofs();
+          loadOrders();
+        } else {
+          statusDiv.textContent = "Access Denied – You are not an admin.";
+        }
+      }
+    });
 
+    async function loadPaymentProofs() {
+      const snapshot = await db.collection("paymentProofs").get();
+      proofsTable.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `<tr>
+          <td>${data.uid}</td>
+          <td><img src="${data.imageUrl}" width="80"></td>
+          <td>${data.status}</td>
+          <td>${data.amount}</td>
+          <td>
+            <button onclick="approveProof('${doc.id}', ${data.amount}, '${data.uid}')">Approve</button>
+          </td>
+        </tr>`;
+        proofsTable.innerHTML += row;
+      });
+    }
+
+    async function approveProof(proofId, amount, uid) {
+      // Update status
+      await db.collection("paymentProofs").doc(proofId).update({ status: "approved" });
+      // Add balance to user
+      const userRef = db.collection("users").doc(uid);
+      await db.runTransaction(async (t) => {
+        const userDoc = await t.get(userRef);
+        const newBalance = (userDoc.data().balance || 0) + amount;
+        t.update(userRef, { balance: newBalance });
+      });
+      loadPaymentProofs();
+      alert("Approved and balance updated!");
+    }
+
+    async function loadOrders() {
+      const snapshot = await db.collection("orders").get();
+      ordersTable.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const date = data.date?.toDate ? data.date.toDate().toLocaleString() : "";
+        const row = `<tr>
+          <td>${data.uid}</td>
+          <td>${JSON.stringify(data.details)}</td>
+          <td>${date}</td>
+        </tr>`;
+        ordersTable.innerHTML += row;
+      });
+    }
+  </script>
 </body>
 </html>
